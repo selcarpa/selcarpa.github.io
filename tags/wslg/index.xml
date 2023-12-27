@@ -1,0 +1,15 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>wslg - Tag - 今日无新鲜事</title>
+        <link>https://finite.tain.one/tags/wslg/</link>
+        <description>wslg - Tag - 今日无新鲜事</description>
+        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>selcarpa@gmail.com (selcarpa)</managingEditor>
+            <webMaster>selcarpa@gmail.com (selcarpa)</webMaster><lastBuildDate>Tue, 29 Aug 2023 23:56:17 &#43;0800</lastBuildDate><atom:link href="https://finite.tain.one/tags/wslg/" rel="self" type="application/rss+xml" /><item>
+    <title>借助wslg使用Linux版本的idea</title>
+    <link>https://finite.tain.one/docs/tools/wslg/</link>
+    <pubDate>Tue, 29 Aug 2023 23:56:17 &#43;0800</pubDate><author>
+        <name>selcarpa</name>
+    </author><guid>https://finite.tain.one/docs/tools/wslg/</guid>
+    <description><![CDATA[缘由大部分Java程序员都会使用idea在Windows下进行开发，然后部署到Linux服务器上，大部分情况下，Java强大的跨平台性使得这]]></description>
+</item></channel>
+</rss>

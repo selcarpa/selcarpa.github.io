@@ -1,0 +1,15 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>web analytics - Tag - 今日无新鲜事</title>
+        <link>https://finite.tain.one/tags/web-analytics/</link>
+        <description>web analytics - Tag - 今日无新鲜事</description>
+        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>selcarpa@gmail.com (selcarpa)</managingEditor>
+            <webMaster>selcarpa@gmail.com (selcarpa)</webMaster><lastBuildDate>Mon, 25 Dec 2023 10:34:27 &#43;0800</lastBuildDate><atom:link href="https://finite.tain.one/tags/web-analytics/" rel="self" type="application/rss+xml" /><item>
+    <title>自托管Plausible统计静态网页访问</title>
+    <link>https://finite.tain.one/docs/tools/plausible/</link>
+    <pubDate>Mon, 25 Dec 2023 10:34:27 &#43;0800</pubDate><author>
+        <name>selcarpa</name>
+    </author><guid>https://finite.tain.one/docs/tools/plausible/</guid>
+    <description><![CDATA[背景 我们需要一个统计工具，用于统计静态网页的访问量 不少人的浏览器会安装ublock、adblock等插件，导致一众统计服务无法统计到访问量 P]]></description>
+</item></channel>
+</rss>

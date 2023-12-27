@@ -1,0 +1,15 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>cloudflare - Tag - 今日无新鲜事</title>
+        <link>https://finite.tain.one/tags/cloudflare/</link>
+        <description>cloudflare - Tag - 今日无新鲜事</description>
+        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>selcarpa@gmail.com (selcarpa)</managingEditor>
+            <webMaster>selcarpa@gmail.com (selcarpa)</webMaster><lastBuildDate>Mon, 11 Sep 2023 17:18:08 &#43;0800</lastBuildDate><atom:link href="https://finite.tain.one/tags/cloudflare/" rel="self" type="application/rss+xml" /><item>
+    <title>使用cloudflare的api实现ddns</title>
+    <link>https://finite.tain.one/docs/tools/cf-ddns/</link>
+    <pubDate>Mon, 11 Sep 2023 17:18:08 &#43;0800</pubDate><author>
+        <name>selcarpa</name>
+    </author><guid>https://finite.tain.one/docs/tools/cf-ddns/</guid>
+    <description><![CDATA[介绍在家里搭建一些私有服务时，如果没有公网ip，就无法通过外网访问。这个时候我们一般有三个方案： 方案一，打电话让运营商分配一个公网ip 方案二]]></description>
+</item></channel>
+</rss>

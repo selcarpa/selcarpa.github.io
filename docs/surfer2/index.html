@@ -1,0 +1,749 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noodp" />
+    <title>用Netty实现Trojan（二）&#34; - 今日无新鲜事</title><meta name="Description" content="今日无新鲜事"><meta property="og:title" content="用Netty实现Trojan（二）&#34;" />
+<meta property="og:description" content="用Netty实现Trojan（二）本节主要是介绍如何实现一个允许tcp通过的socks代理服务器，大部分携带网络功能的客户端，如curl、w" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://finite.tain.one/docs/surfer2/" /><meta property="og:image" content="https://finite.tain.one/logo.png" /><meta property="article:section" content="docs" />
+<meta property="article:published_time" content="2023-08-25T09:49:07+08:00" />
+<meta property="article:modified_time" content="2023-12-27T14:15:58+08:00" /><meta property="og:site_name" content="今日无新鲜事" />
+
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:image" content="https://finite.tain.one/logo.png" /><meta name="twitter:title" content="用Netty实现Trojan（二）&#34;"/>
+<meta name="twitter:description" content="用Netty实现Trojan（二）本节主要是介绍如何实现一个允许tcp通过的socks代理服务器，大部分携带网络功能的客户端，如curl、w"/>
+<meta name="application-name" content="今日无新鲜事">
+<meta name="apple-mobile-web-app-title" content="今日无新鲜事">
+
+<meta name="theme-color" content="#f8f8f8"><meta name="msapplication-TileColor" content="#da532c"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5"><link rel="canonical" href="https://finite.tain.one/docs/surfer2/" /><link rel="prev" href="https://finite.tain.one/docs/surfer1/" /><link rel="next" href="https://finite.tain.one/docs/tools/wslg/" />
+<link rel="stylesheet" href="/css/main.css"><link rel="stylesheet" href="/lib/normalize/normalize.min.css"><link rel="stylesheet" href="/css/color.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'" href="/lib/fontawesome-free/all.min.css">
+        <noscript><link rel="stylesheet" href="/lib/fontawesome-free/all.min.css"></noscript><link rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'" href="/lib/animate/animate.min.css">
+        <noscript><link rel="stylesheet" href="/lib/animate/animate.min.css"></noscript><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "用Netty实现Trojan（二）\"",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/finite.tain.one\/docs\/surfer2\/"
+        },"genre": "docs","keywords": "Netty, java, kotlin, surfer, trojan, socks","wordcount":  4217 ,
+        "url": "https:\/\/finite.tain.one\/docs\/surfer2\/","datePublished": "2023-08-25T09:49:07+08:00","dateModified": "2023-12-27T14:15:58+08:00","publisher": {
+            "@type": "Organization",
+            "name": ""},"author": {
+                "@type": "Person",
+                "name": "selcarpa"
+            },"description": ""
+    }
+    </script></head>
+
+<body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">
+        function setTheme(theme) {document.body.setAttribute('theme', theme); document.documentElement.style.setProperty('color-scheme', theme === 'light' ? 'light' : 'dark'); window.theme = theme;   window.isDark = window.theme !== 'light' }
+        function saveTheme(theme) {window.localStorage && localStorage.setItem('theme', theme);}
+        function getMeta(metaName) {const metas = document.getElementsByTagName('meta'); for (let i = 0; i < metas.length; i++) if (metas[i].getAttribute('name') === metaName) return metas[i]; return '';}
+        if (window.localStorage && localStorage.getItem('theme')) {let theme = localStorage.getItem('theme');theme === 'light' || theme === 'dark' || theme === 'black' ? setTheme(theme) : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? setTheme('dark') : setTheme('light')); } else { if ('auto' === 'light' || 'auto' === 'dark' || 'auto' === 'black') setTheme('auto'), saveTheme('auto'); else saveTheme('auto'), window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? setTheme('dark') : setTheme('light');}
+        let metaColors = {'light': '#f8f8f8','dark': '#252627','black': '#000000'}
+        getMeta('theme-color').content = metaColors[document.body.getAttribute('theme')];
+        window.switchThemeEventSet = new Set()
+    </script>
+    
+    <script type="module">
+      import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.esm.min.mjs';
+      mermaid.initialize({ startOnLoad: true });
+    </script>
+  
+    <div id="back-to-top"></div>
+    <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="今日无新鲜事">今日无新鲜事</a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/docs/"> 文档 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="https://anapla.beyond.tain.one/finite.tain.one" title="访问统计" rel="noopener noreferrer" target="_blank"> 访问统计 </a><a class="menu-item" href="https://github.com/selcarpa/nnt" title="GitHub" rel="noopener noreferrer" target="_blank"><i class='fab fa-github fa-fw'></i>  </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="Search titles or contents..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="Search">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="Clear">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="Switch Theme">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a></div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="今日无新鲜事">今日无新鲜事</a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="Search titles or contents..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="Search">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="Clear">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        Cancel
+                    </a>
+                </div><a class="menu-item" href="/docs/" title="">文档</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="https://anapla.beyond.tain.one/finite.tain.one" title="访问统计" rel="noopener noreferrer" target="_blank">访问统计</a><a class="menu-item" href="https://github.com/selcarpa/nnt" title="GitHub" rel="noopener noreferrer" target="_blank"><i class='fab fa-github fa-fw'></i></a><a href="javascript:void(0);" class="menu-item theme-switch" title="Switch Theme">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+            <div class="container"><div class="page single special"><h1 class="single-title animate__animated animate__pulse animate__faster">用Netty实现Trojan（二）&#34;</h1><div class="content" id="content"><h1 id="用netty实现trojan二" class="headerLink">
+    <a href="#%e7%94%a8netty%e5%ae%9e%e7%8e%b0trojan%e4%ba%8c" class="header-mark"></a>用Netty实现Trojan（二）</h1><p>本节主要是介绍如何实现一个允许tcp通过的socks代理服务器，大部分携带网络功能的客户端，如curl、wget、浏览器等，在请求的时候，可以通过环境变量或者设置的形式，使这些客户端通过代理进行请求，以下是一个简单的例子：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl"><span class="nb">export</span> <span class="nv">https_proxy</span><span class="o">=</span>socks5://127.0.0.1:1080 <span class="c1"># 设置https使用socks5代理</span>
+</span></span><span class="line"><span class="cl">curl -v https://www.google.com <span class="c1"># 进行一次https的请求</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>在实现trojan协议之前，我们首先需要实现一个socks5代理服务端，用以在客户端中使用。</p>
+<p>本文目前参照Netty官方的socks5实现，实现了一个socks代理服务器，由于大部分客户端都已经同时兼容socks4和socks5，此处仅实现socks5协议，socks5协议支持tcp、udp连接方式，但此处只实现了socks5的tcp代理。</p>
+<h2 id="参考" class="headerLink">
+    <a href="#%e5%8f%82%e8%80%83" class="header-mark"></a>参考</h2><ul>
+<li><a href="https://github.com/Netty/Netty/tree/4.1/example/src/main/java/io/Netty/example/socksproxy" target="_blank" rel="noopener noreferrer">Netty/Netty socks example</a></li>
+<li><a href="https://zh.wikipedia.org/wiki/SOCKS" target="_blank" rel="noopener noreferrer">socks wiki</a></li>
+</ul>
+<h2 id="时序图" class="headerLink">
+    <a href="#%e6%97%b6%e5%ba%8f%e5%9b%be" class="header-mark"></a>时序图</h2><p>socks5的tcp代理，大致时序如下：</p>
+<pre class="mermaid">sequenceDiagram
+    autonumber
+    participant 客户端
+    participant 代理服务器
+    participant 目标服务器
+    客户端 --> 代理服务器: 建立Tcp连接
+    客户端 ->>+ 代理服务器: 发送socks5的初始化请求
+    代理服务器 ->>- 客户端: 发送socks5的初始化响应
+    alt 无密码认证
+        客户端 --> 代理服务器: 建立socks5连接
+    else 需要密码认证
+        critical 密码认证
+            客户端 ->>+ 代理服务器: 发送密码认证请求
+            代理服务器 ->>- 客户端: 验证密码，发送结果
+        option 密码错误
+            客户端 --> 客户端: 结束
+        option 密码正确
+            客户端 --> 代理服务器: 建立socks5连接
+        end
+    end
+    代理服务器 ->> 目标服务器: 建立tcp连接
+    代理服务器 ->> 客户端: 发送socks5连接响应
+
+    loop 后续的交互
+        客户端 ->>+ 代理服务器: 发送请求报文
+        代理服务器 ->>+ 目标服务器: 转发请求报文
+        目标服务器 ->>- 代理服务器: 发送响应报文
+        代理服务器 ->>- 客户端: 转发响应报文
+    end
+</pre>
+<h2 id="实现" class="headerLink">
+    <a href="#%e5%ae%9e%e7%8e%b0" class="header-mark"></a>实现</h2><h3 id="初始化通道" class="headerLink">
+    <a href="#%e5%88%9d%e5%a7%8b%e5%8c%96%e9%80%9a%e9%81%93" class="header-mark"></a>初始化通道</h3><p>初始化通道采用Netty的<code>SocksPortUnificationServerHandler</code>
+，在这个handler中，会将首个请求，按照socks4或者socks5的协议进行解析，解析结果<code>SocksMessage</code>
+对象。此段对应上面时序图中建立Tcp连接和发送socks5的初始化请求部分的处理。这部分都是Netty内部的解码器已经实现了，这部分主要是将这部分组合起来，连同Netty自身启动一起介绍。</p>
+<h4 id="启动netty部分" class="headerLink">
+    <a href="#%e5%90%af%e5%8a%a8netty%e9%83%a8%e5%88%86" class="header-mark"></a>启动Netty部分</h4><div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="line"><span class="cl"><span class="n">ServerBootstrap</span><span class="p">().</span><span class="n">group</span><span class="p">(</span><span class="n">bossGroup</span><span class="p">,</span> <span class="n">workerGroup</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">.</span><span class="n">channel</span><span class="p">(</span><span class="n">NioServerSocketChannel</span><span class="o">::</span><span class="k">class</span><span class="p">.</span><span class="n">java</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">.</span><span class="n">childHandler</span><span class="p">(</span><span class="n">ProxyChannelInitializer</span><span class="p">())</span> <span class="c1">//此处定义一个通道初始化器，用于后续根据业务逻辑来初始化pipeline等信息
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="p">.</span><span class="n">bind</span><span class="p">(</span><span class="n">inbound</span><span class="p">.</span><span class="n">port</span><span class="p">)</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h4 id="通道管线初始化" class="headerLink">
+    <a href="#%e9%80%9a%e9%81%93%e7%ae%a1%e7%ba%bf%e5%88%9d%e5%a7%8b%e5%8c%96" class="header-mark"></a>通道管线初始化</h4><div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="line"><span class="cl"><span class="c1">//...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="k">class</span> <span class="nc">ProxyChannelInitializer</span> <span class="p">:</span> <span class="n">ChannelInitializer</span><span class="p">&lt;</span><span class="n">NioSocketChannel</span><span class="p">&gt;()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">//...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="k">override</span> <span class="k">fun</span> <span class="nf">initChannel</span><span class="p">(</span><span class="n">ch</span><span class="p">:</span> <span class="n">NioSocketChannel</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="c1">//...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="n">initSocksInbound</span><span class="p">(</span><span class="n">ch</span><span class="p">,</span> <span class="n">inbound</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span>
+</span></span><span class="line"><span class="cl">        <span class="c1">//...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="k">private</span> <span class="k">fun</span> <span class="nf">initSocksInbound</span><span class="p">(</span><span class="n">ch</span><span class="p">:</span> <span class="n">NioSocketChannel</span><span class="p">,</span> <span class="n">inbound</span><span class="p">:</span> <span class="n">Inbound</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">ch</span><span class="p">.</span><span class="n">pipeline</span><span class="p">().</span><span class="n">addLast</span><span class="p">(</span><span class="n">SocksPortUnificationServerHandler</span><span class="p">())</span> <span class="c1">//在此处添加socks协议初始化的协议解析器
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="c1">//...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">//...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h3 id="socks5的认证报文处理" class="headerLink">
+    <a href="#socks5%e7%9a%84%e8%ae%a4%e8%af%81%e6%8a%a5%e6%96%87%e5%a4%84%e7%90%86" class="header-mark"></a>socks5的认证报文处理</h3><p>由于socks5的认证处理部分是建议自定义的，Netty仅提供了大致的结构实现，具体如何去认证，由开发者自己实现。此处，我们需要实现一个免密认证和账号密码认证。在三一部分的初始化过程中，客户端发送的tcp数据包，已经由<code>SocksPortUnificationServerHandler</code>
+转化为<code>SocksMessage</code>对象，此处我们创建一个<code>SimpleChannelInboundHandler</code>的实现类，泛型指定为<code>SocksMessage</code>，用以处理socks5的认证请求。</p>
+<p>在认证请求处理完成后，代理服务前会从当前的初始化-认证处理阶段进入到命令报文的处理阶段，此时，我们需要将<code>SocksServerHandler</code>
+从pipeline中移除，添加<code>SocksServerConnectHandler</code>，用以处理后续的命令报文。这一段在下文的注释3中有说明。</p>
+<p>在认证过程的处理中，我们分两个步骤进行，第一个步骤接受到的是socks5的初始数据包，数据包格式如下：</p>
+<table>
+<thead>
+<tr>
+<th>&ndash;</th>
+<th>VER</th>
+<th>NMETHODS</th>
+<th>METHODS</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>字节数</td>
+<td>1</td>
+<td>1</td>
+<td>1~255</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>VER：socks版本，此处为5（在以下代码<code>注释1</code>中，有用到此信息进行版本判断）</li>
+<li>NMETHODS：METHODS的长度（这部分是在<code>SocksPortUnificationServerHandler</code>已经自动处理）</li>
+<li>METHODS：METHODS的内容，METHODS的内容为1~
+255的数字，代表认证方式，0x00代表无密码认证，0x02代表账号密码认证（在本段代码中，只是想实现这两种认证方式，其他的认证方式，可以参考socks5协议文档自行实现）</li>
+</ul>
+<p>服务器从客户端提供的方法中选择一个并通过以下消息通知客户端：</p>
+<table>
+<thead>
+<tr>
+<th>&ndash;</th>
+<th>VER</th>
+<th>METHOD</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>字节数</td>
+<td>1</td>
+<td>1</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>VER：socks版本，此处为5</li>
+<li></li>
+</ul>
+<p>METHOD：METHODS的内容，其中选一个进行返回，如果没有一个认证方式，可以进行返回0xFF，此处我们只实现了0x00和0x02，所以返回0x00或者0x02（在<code>注释2</code>
+处，根据项目配置信息，会选择返回无密码认证或者有密码认证）</p>
+<p>SOCKS5 用户名密码认证方式
+在客户端、服务端协商使用用户名密码认证后，客户端发出用户名密码，格式为</p>
+<table>
+<thead>
+<tr>
+<th>&ndash;</th>
+<th>VER</th>
+<th>ULEN</th>
+<th>UNAME</th>
+<th>PLEN</th>
+<th>PASSWD</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>字节数</td>
+<td>1</td>
+<td>1</td>
+<td>1~255</td>
+<td>1</td>
+<td>1~255</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>VER：鉴定协议版本目前为 0x01</li>
+<li>ULEN：UNAME 长度，1 字节</li>
+<li>UNAME：用户名</li>
+<li>PLEN：PASSWD 长度，1 字节</li>
+<li>PASSWD：密码</li>
+</ul>
+<p>服务器鉴定后发出如下回应（）：</p>
+<table>
+<thead>
+<tr>
+<th>&ndash;</th>
+<th>VER</th>
+<th>STATUS</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>字节数</td>
+<td>1</td>
+<td>1</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>VER：鉴定协议版本目前为 0x01</li>
+<li>STATUS：鉴定状态，0x00 表示成功，0x01 表示失败。</li>
+</ul>
+<p>其中鉴定状态 0x00 表示成功，0x01 表示失败。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span><span class="lnt">48
+</span><span class="lnt">49
+</span><span class="lnt">50
+</span><span class="lnt">51
+</span><span class="lnt">52
+</span><span class="lnt">53
+</span><span class="lnt">54
+</span><span class="lnt">55
+</span><span class="lnt">56
+</span><span class="lnt">57
+</span><span class="lnt">58
+</span><span class="lnt">59
+</span><span class="lnt">60
+</span><span class="lnt">61
+</span><span class="lnt">62
+</span><span class="lnt">63
+</span><span class="lnt">64
+</span><span class="lnt">65
+</span><span class="lnt">66
+</span><span class="lnt">67
+</span><span class="lnt">68
+</span><span class="lnt">69
+</span><span class="lnt">70
+</span><span class="lnt">71
+</span><span class="lnt">72
+</span><span class="lnt">73
+</span><span class="lnt">74
+</span><span class="lnt">75
+</span><span class="lnt">76
+</span><span class="lnt">77
+</span><span class="lnt">78
+</span><span class="lnt">79
+</span><span class="lnt">80
+</span><span class="lnt">81
+</span><span class="lnt">82
+</span><span class="lnt">83
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="line"><span class="cl"><span class="k">class</span> <span class="nc">SocksServerHandler</span><span class="p">(</span><span class="k">private</span> <span class="k">val</span> <span class="py">inbound</span><span class="p">:</span> <span class="n">Inbound</span><span class="p">)</span> <span class="p">:</span> <span class="n">SimpleChannelInboundHandler</span><span class="p">&lt;</span><span class="n">SocksMessage</span><span class="p">&gt;()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">//...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="c1">//用以标记此通道是否已经认证
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="k">private</span> <span class="k">var</span> <span class="py">authed</span> <span class="p">=</span> <span class="k">false</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">public</span> <span class="k">override</span> <span class="k">fun</span> <span class="nf">channelRead0</span><span class="p">(</span><span class="n">ctx</span><span class="p">:</span> <span class="n">ChannelHandlerContext</span><span class="p">,</span> <span class="n">socksRequest</span><span class="p">:</span> <span class="n">SocksMessage</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">when</span> <span class="p">(</span><span class="n">socksRequest</span><span class="p">.</span><span class="n">version</span><span class="p">()</span><span class="o">!!</span><span class="p">)</span> <span class="p">{</span><span class="c1">//注释1，此处为socks版本判断
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>            <span class="nc">SocksVersion</span><span class="p">.</span><span class="n">SOCKS5</span> <span class="o">-&gt;</span> <span class="n">socks5Connect</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span> <span class="n">socksRequest</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">            <span class="k">else</span> <span class="o">-&gt;</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                <span class="n">ctx</span><span class="p">.</span><span class="n">close</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">            <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="cm">/**
+</span></span></span><span class="line"><span class="cl"><span class="cm">     * socks5 connect
+</span></span></span><span class="line"><span class="cl"><span class="cm">     */</span>
+</span></span><span class="line"><span class="cl">    <span class="k">private</span> <span class="k">fun</span> <span class="nf">socks5Connect</span><span class="p">(</span><span class="n">ctx</span><span class="p">:</span> <span class="n">ChannelHandlerContext</span><span class="p">,</span> <span class="n">socksRequest</span><span class="p">:</span> <span class="n">SocksMessage</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="c1">//...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="k">when</span> <span class="p">(</span><span class="n">socksRequest</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="k">is</span> <span class="n">Socks5InitialRequest</span> <span class="o">-&gt;</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                <span class="n">socks5auth</span><span class="p">(</span><span class="n">ctx</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">            <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">            <span class="k">is</span> <span class="n">Socks5PasswordAuthRequest</span> <span class="o">-&gt;</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                <span class="n">socks5DoAuth</span><span class="p">(</span><span class="n">socksRequest</span><span class="p">,</span> <span class="n">ctx</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">            <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">            <span class="k">is</span> <span class="n">Socks5CommandRequest</span> <span class="o">-&gt;</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                <span class="k">if</span> <span class="p">(</span><span class="n">inbound</span><span class="p">.</span><span class="n">socks5Setting</span><span class="o">?.</span><span class="n">auth</span> <span class="o">!=</span> <span class="k">null</span> <span class="o">||</span> <span class="p">!</span><span class="n">authed</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">ctx</span><span class="p">.</span><span class="n">close</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">                <span class="p">}</span>
+</span></span><span class="line"><span class="cl">                <span class="k">if</span> <span class="p">(</span><span class="n">socksRequest</span><span class="p">.</span><span class="n">type</span><span class="p">()</span> <span class="o">===</span> <span class="n">Socks5CommandType</span><span class="p">.</span><span class="n">CONNECT</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                    <span class="c1">//注释3，在客户端直接发送Socks5CommandRequest请求时，已经不需要SocksServerHandler进行处理了，所以需要将SocksServerHandler从pipeline中移除，添加SocksServerConnectHandler
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>                    <span class="n">ctx</span><span class="p">.</span><span class="n">pipeline</span><span class="p">().</span><span class="n">addLast</span><span class="p">(</span><span class="n">SocksServerConnectHandler</span><span class="p">(</span><span class="n">inbound</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">ctx</span><span class="p">.</span><span class="n">pipeline</span><span class="p">().</span><span class="n">remove</span><span class="p">(</span><span class="k">this</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">ctx</span><span class="p">.</span><span class="n">fireChannelRead</span><span class="p">(</span><span class="n">socksRequest</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">                <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">ctx</span><span class="p">.</span><span class="n">close</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">                <span class="p">}</span>
+</span></span><span class="line"><span class="cl">            <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">            <span class="k">else</span> <span class="o">-&gt;</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                <span class="n">ctx</span><span class="p">.</span><span class="n">close</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">            <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="cm">/**
+</span></span></span><span class="line"><span class="cl"><span class="cm">     * socks5 auth
+</span></span></span><span class="line"><span class="cl"><span class="cm">     * 注释2，此处根据配置信息，选择返回无密码认证或者有密码认证
+</span></span></span><span class="line"><span class="cl"><span class="cm">     */</span>
+</span></span><span class="line"><span class="cl">    <span class="k">private</span> <span class="k">fun</span> <span class="nf">socks5auth</span><span class="p">(</span><span class="n">ctx</span><span class="p">:</span> <span class="n">ChannelHandlerContext</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="p">(</span><span class="n">inbound</span><span class="p">.</span><span class="n">socks5Setting</span><span class="o">?.</span><span class="n">auth</span> <span class="o">!=</span> <span class="k">null</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="n">ctx</span><span class="p">.</span><span class="n">pipeline</span><span class="p">().</span><span class="n">addFirst</span><span class="p">(</span><span class="n">Socks5PasswordAuthRequestDecoder</span><span class="p">())</span><span class="c1">//有密码认证的情况下，添加密码认证报文解析器
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>            <span class="n">ctx</span><span class="p">.</span><span class="n">write</span><span class="p">(</span><span class="n">DefaultSocks5InitialResponse</span><span class="p">(</span><span class="n">Socks5AuthMethod</span><span class="p">.</span><span class="n">PASSWORD</span><span class="p">))</span> <span class="c1">//返回有密码认证
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="n">authed</span> <span class="p">=</span> <span class="k">true</span>
+</span></span><span class="line"><span class="cl">            <span class="n">ctx</span><span class="p">.</span><span class="n">pipeline</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">                <span class="p">.</span><span class="n">addFirst</span><span class="p">(</span><span class="n">Socks5CommandRequestDecoder</span><span class="p">())</span><span class="c1">//有密码认证的情况下，添加命令报文的解析器，此解析器将socks5连接过程中的报文解析为Socks5CommandRequest对象
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>            <span class="n">ctx</span><span class="p">.</span><span class="n">write</span><span class="p">(</span><span class="n">DefaultSocks5InitialResponse</span><span class="p">(</span><span class="n">Socks5AuthMethod</span><span class="p">.</span><span class="n">NO_AUTH</span><span class="p">))</span> <span class="c1">//返回无密码认证
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="cm">/**
+</span></span></span><span class="line"><span class="cl"><span class="cm">     * socks5 auth
+</span></span></span><span class="line"><span class="cl"><span class="cm">     * 此处进行了密码认证，如果认证失败，则关闭连接
+</span></span></span><span class="line"><span class="cl"><span class="cm">     */</span>
+</span></span><span class="line"><span class="cl">    <span class="k">private</span> <span class="k">fun</span> <span class="nf">socks5DoAuth</span><span class="p">(</span><span class="n">socksRequest</span><span class="p">:</span> <span class="n">Socks5PasswordAuthRequest</span><span class="p">,</span> <span class="n">ctx</span><span class="p">:</span> <span class="n">ChannelHandlerContext</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="p">(</span><span class="n">inbound</span><span class="p">.</span><span class="n">socks5Setting</span><span class="o">?.</span><span class="n">auth</span><span class="o">?.</span><span class="n">username</span> <span class="o">!=</span> <span class="n">socksRequest</span><span class="p">.</span><span class="n">username</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">            <span class="o">||</span> <span class="n">inbound</span><span class="p">.</span><span class="n">socks5Setting</span><span class="o">?.</span><span class="n">auth</span><span class="o">?.</span><span class="n">password</span> <span class="o">!=</span> <span class="n">socksRequest</span><span class="p">.</span><span class="n">password</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">        <span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="n">logger</span><span class="p">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&#34;socks5 auth failed from: </span><span class="si">${ctx.channel().remoteAddress()}</span><span class="s2">&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">            <span class="n">ctx</span><span class="p">.</span><span class="n">write</span><span class="p">(</span><span class="n">DefaultSocks5PasswordAuthResponse</span><span class="p">(</span><span class="n">Socks5PasswordAuthStatus</span><span class="p">.</span><span class="n">FAILURE</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">            <span class="n">ctx</span><span class="p">.</span><span class="n">close</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">            <span class="k">return</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="n">ctx</span><span class="p">.</span><span class="n">pipeline</span><span class="p">().</span><span class="n">addFirst</span><span class="p">(</span><span class="n">Socks5CommandRequestDecoder</span><span class="p">())</span>
+</span></span><span class="line"><span class="cl">        <span class="n">ctx</span><span class="p">.</span><span class="n">write</span><span class="p">(</span><span class="n">DefaultSocks5PasswordAuthResponse</span><span class="p">(</span><span class="n">Socks5PasswordAuthStatus</span><span class="p">.</span><span class="n">SUCCESS</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">        <span class="n">authed</span> <span class="p">=</span> <span class="k">true</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">//...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h3 id="socks5的命令报文处理" class="headerLink">
+    <a href="#socks5%e7%9a%84%e5%91%bd%e4%bb%a4%e6%8a%a5%e6%96%87%e5%a4%84%e7%90%86" class="header-mark"></a>socks5的命令报文处理</h3><p>认证结束后客户端就可以发送请求信息。如果认证方法有特殊封装要求，请求必须按照方法所定义的方式进行封装。
+SOCKS5请求格式：</p>
+<table>
+<thead>
+<tr>
+<th>&ndash;</th>
+<th>VER</th>
+<th>CMD</th>
+<th>RSV</th>
+<th>ATYP</th>
+<th>DST.ADDR</th>
+<th>DST.PORT</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>字节数</td>
+<td>1</td>
+<td>1</td>
+<td>1</td>
+<td>1</td>
+<td>动态</td>
+<td>2</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>VER：SOCKS版本，此处为5</li>
+<li>CMD：SOCKS命令码，1 字节，有 3 种命令码：
+<ul>
+<li>0x01：CONNECT 命令</li>
+<li>0x02：BIND 命令</li>
+<li>0x03：UDP ASSOCIATE 命令</li>
+</ul>
+</li>
+<li>RSV：保留字，1 字节，值 0x00</li>
+<li>ATYP：地址类型，1 字节，有 3 种类型：
+<ul>
+<li>0x01：IPv4 地址</li>
+<li>0x03：域名</li>
+<li>0x04：IPv6 地址</li>
+</ul>
+</li>
+<li>DST.ADDR：目的地址，长度不定</li>
+<li>DST.PORT：目的端口，2 字节</li>
+</ul>
+<p>关于sock5命令报文，这里需要抽出其中有用的几个信息，分别是CMD、ATYP、DST.ADDR、DST.PORT，Netty内部提供的<code>Socks5CommandRequest</code>
+对象，已经将这些信息抽取出来了，我们只需要从中获取即可。</p>
+<p>此处仅探讨CMD=0x01的情况，即CONNECT命令，此命令在socks5协议中，是用来建立tcp连接的，根据Wikipedia对于socks5的介绍，在服务端收到命令报文，且CMD为0x01后，需要根据报文内容，即目标服务前的地址和端口，建立tcp连接，然后返回一个响应报文，响应报文格式如下：</p>
+<table>
+<thead>
+<tr>
+<th>&ndash;</th>
+<th>VER</th>
+<th>REP</th>
+<th>RSV</th>
+<th>ATYP</th>
+<th>BND.ADDR</th>
+<th>BND.PORT</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>字节数</td>
+<td>1</td>
+<td>1</td>
+<td>1</td>
+<td>1</td>
+<td>动态</td>
+<td>2</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>VER：SOCKS版本，此处为5</li>
+<li>REP：响应码，1 字节，有 6 种响应码：
+<ul>
+<li>0x00：请求成功</li>
+<li>0x01：普通 SOCKS 服务器连接失败</li>
+<li>0x02：现有规则不允许连接</li>
+<li>0x03：网络不可达</li>
+<li>0x04：主机不可达</li>
+<li>0x05：连接被拒</li>
+<li>0x06：TTL 超时</li>
+<li>0x07：不支持的命令</li>
+<li>0x08：不支持的地址类型</li>
+<li>0x09：其它错误</li>
+<li>0x0A-0xFF：未定义</li>
+</ul>
+</li>
+<li>RSV：保留字，1 字节，值 0x00</li>
+<li>ATYP：地址类型，1 字节，有 3 种类型：
+<ul>
+<li>0x01：IPv4 地址</li>
+<li>0x03：域名</li>
+<li>0x04：IPv6 地址</li>
+</ul>
+</li>
+<li>BND.ADDR：绑定地址，长度不定</li>
+<li>BND.PORT：绑定端口，2 字节</li>
+</ul>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="line"><span class="cl"><span class="k">class</span> <span class="nc">SocksServerConnectHandler</span><span class="p">(</span><span class="k">private</span> <span class="k">val</span> <span class="py">inbound</span><span class="p">:</span> <span class="n">Inbound</span><span class="p">)</span> <span class="p">:</span> <span class="n">SimpleChannelInboundHandler</span><span class="p">&lt;</span><span class="n">SocksMessage</span><span class="p">&gt;()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1">//...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="cm">/**
+</span></span></span><span class="line"><span class="cl"><span class="cm">     * socks5 command
+</span></span></span><span class="line"><span class="cl"><span class="cm">     */</span>
+</span></span><span class="line"><span class="cl">    <span class="k">private</span> <span class="k">fun</span> <span class="nf">socks5Command</span><span class="p">(</span><span class="n">originCTX</span><span class="p">:</span> <span class="n">ChannelHandlerContext</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="n">Socks5CommandRequest</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="c1">//...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>            <span class="n">resolveOutbound</span><span class="p">.</span><span class="n">ifPresent</span> <span class="p">{</span> <span class="n">outbound</span> <span class="o">-&gt;</span>
+</span></span><span class="line"><span class="cl">                    <span class="n">relayAndOutbound</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">                        <span class="n">RelayAndOutboundOp</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">                            <span class="n">originCTX</span> <span class="p">=</span> <span class="n">originCTX</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                            <span class="n">outbound</span> <span class="p">=</span> <span class="n">outbound</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                            <span class="n">odor</span> <span class="p">=</span> <span class="n">odor</span>
+</span></span><span class="line"><span class="cl">                        <span class="p">).</span><span class="n">also</span> <span class="p">{</span><span class="n">relayAndOutboundOp</span> <span class="o">-&gt;</span>
+</span></span><span class="line"><span class="cl">                            <span class="n">relayAndOutboundOp</span><span class="p">.</span><span class="n">connectEstablishedCallback</span> <span class="p">=</span> <span class="p">{</span> <span class="c1">//此处采用回调的方式，当连接建立成功后，进行回调
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>                                <span class="n">originCTX</span><span class="p">.</span><span class="n">channel</span><span class="p">().</span><span class="n">writeAndFlush</span><span class="p">(</span> <span class="c1">//回调的方法是向客户端发送一个连接成功的响应报文
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>                                    <span class="n">DefaultSocks5CommandResponse</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">                                        <span class="n">Socks5CommandStatus</span><span class="p">.</span><span class="n">SUCCESS</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">                                        <span class="n">message</span><span class="p">.</span><span class="n">dstAddrType</span><span class="p">(),</span>
+</span></span><span class="line"><span class="cl">                                        <span class="n">message</span><span class="p">.</span><span class="n">dstAddr</span><span class="p">(),</span>
+</span></span><span class="line"><span class="cl">                                        <span class="n">message</span><span class="p">.</span><span class="n">dstPort</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">                                    <span class="p">)</span>
+</span></span><span class="line"><span class="cl">                                <span class="p">).</span><span class="n">addListener</span><span class="p">(</span><span class="n">ChannelFutureListener</span> <span class="p">{</span> <span class="c1">//在响应报文发送完成后，移除SocksServerConnectHandler
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>                                    <span class="n">originCTX</span><span class="p">.</span><span class="n">pipeline</span><span class="p">().</span><span class="n">remove</span><span class="p">(</span><span class="k">this</span><span class="nd">@SocksServerConnectHandler</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">                                <span class="p">})</span>
+</span></span><span class="line"><span class="cl">                            <span class="p">}</span>
+</span></span><span class="line"><span class="cl">                            <span class="c1">//...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>                        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">                    <span class="p">)</span>
+</span></span><span class="line"><span class="cl">                <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="c1">//...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>至此，代码就已经能成功处理socks5代理的各种报文，并且建立了到达目标服务前的tcp连接，下一步就是将客户端的请求报文转发到目标服务前，以及将目标服务前的响应报文转发到客户端。</p>
+<h3 id="转发报文中继handler实现" class="headerLink">
+    <a href="#%e8%bd%ac%e5%8f%91%e6%8a%a5%e6%96%87%e4%b8%ad%e7%bb%a7handler%e5%ae%9e%e7%8e%b0" class="header-mark"></a>转发报文（中继Handler实现）</h3><p>中继Handler的目标是将一个channel中接收到的报文，转发至另一个channel，实现方式非常简单，我们在构造函数中，将目标channel作为参数传递至handler的实现中，当handler接收到源channel发送的报文，直接调用目标channel的write，将此handler添加到socks5来自客户端的连接和到达目标服务器的连接的最后一项即可，以下是代码实现。</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="line"><span class="cl"><span class="cm">/**
+</span></span></span><span class="line"><span class="cl"><span class="cm"> * relay from client channel to server
+</span></span></span><span class="line"><span class="cl"><span class="cm"> */</span>
+</span></span><span class="line"><span class="cl"><span class="k">class</span> <span class="nc">RelayInboundHandler</span><span class="p">(</span><span class="k">private</span> <span class="k">val</span> <span class="py">relayChannel</span><span class="p">:</span> <span class="n">Channel</span><span class="p">,</span> <span class="k">private</span> <span class="k">val</span> <span class="py">inActiveCallBack</span><span class="p">:</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Unit</span> <span class="p">=</span> <span class="p">{})</span> <span class="p">:</span>
+</span></span><span class="line"><span class="cl">    <span class="n">ChannelInboundHandlerAdapter</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">//...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="k">override</span> <span class="k">fun</span> <span class="nf">channelRead</span><span class="p">(</span><span class="n">ctx</span><span class="p">:</span> <span class="n">ChannelHandlerContext</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="p">(</span><span class="n">relayChannel</span><span class="p">.</span><span class="n">isActive</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="c1">//...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>            <span class="n">relayChannel</span><span class="p">.</span><span class="n">writeAndFlush</span><span class="p">(</span><span class="n">msg</span><span class="p">).</span><span class="n">addListener</span><span class="p">(</span><span class="n">ChannelFutureListener</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                <span class="c1">//...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>            <span class="p">})</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="c1">//...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">//...
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h2 id="总结" class="headerLink">
+    <a href="#%e6%80%bb%e7%bb%93" class="header-mark"></a>总结</h2><p>socks5的代理实现主要是需要根据socks5的报文定义，分别实现初始化报文、认证报文、命令报文的解析，以及根据命令报文的内容，建立到达目标服务前的tcp连接，然后将客户端的请求报文转发到目标服务前，将目标服务前的响应报文转发到客户端。</p>
+</div></div></div>
+        </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line"><span class="author" itemprop="copyrightHolder">&nbsp;<a href="https://finite.tain.one/" target="_blank" rel="noopener noreferrer">selcarpa</a></span></div>
+            <div class="footer-line"></div>
+            <div class="footer-line">
+            </div>
+        </div></footer></div>
+
+    <div id="fixed-buttons"><a href="#back-to-top" id="back-to-top-button" class="fixed-button" title="Back to Top">
+            <i class="fas fa-arrow-up fa-fw"></i>
+        </a><a href="#" id="view-comments" class="fixed-button" title="View Comments">
+            <i class="fas fa-comment fa-fw"></i>
+        </a>
+    </div><div id="cookieconsent-container"></div><div class="assets"><link rel="stylesheet" href="/lib/katex/katex.min.css"><link rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'" href="/lib/katex/copy-tex.min.css">
+        <noscript><link rel="stylesheet" href="/lib/katex/copy-tex.min.css"></noscript><link rel="stylesheet" href="/lib/cookieconsent/cookieconsent.min.css"><script type="text/javascript">window.config={"code":{"copyTitle":"Copy to clipboard","maxShownLines":50},"comment":{},"cookieconsent":{"content":{"dismiss":"Got it!","link":"Learn more","message":"This website uses Cookies to improve your experience."},"enable":true,"palette":{"button":{"background":"#f0f0f0"},"popup":{"background":"#1aa3ff"}},"theme":"edgeless"},"math":{"delimiters":[{"display":true,"left":"$$","right":"$$"},{"display":true,"left":"\\[","right":"\\]"},{"display":false,"left":"$","right":"$"},{"display":false,"left":"\\(","right":"\\)"}],"strict":false},"search":{"distance":null,"findAllMatches":null,"fuseIndexURL":"/index.json","highlightTag":"em","ignoreFieldNorm":null,"ignoreLocation":null,"isCaseSensitive":null,"location":null,"maxResultLength":10,"minMatchCharLength":null,"noResultsFound":"No results found","snippetLength":50,"threshold":null,"type":"fuse","useExtendedSearch":null}};</script><script type="text/javascript" src="/lib/clipboard/clipboard.min.js"></script><script type="text/javascript" src="/lib/katex/katex.min.js" defer></script><script type="text/javascript" src="/lib/katex/auto-render.min.js" defer></script><script type="text/javascript" src="/lib/katex/copy-tex.min.js" defer></script><script type="text/javascript" src="/lib/katex/mhchem.min.js" defer></script><script type="text/javascript" src="/js/katex.min.js" defer></script><script type="text/javascript" src="/lib/cookieconsent/cookieconsent.min.js" defer></script><script type="text/javascript" src="/js/cookieconsent.min.js" defer></script><script type="text/javascript" src="/js/theme.min.js" defer></script><script async defer data-domain="finite.tain.one" src="https://anapla.beyond.tain.one/js/script.js"></script><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "27987b0a6e2c4a19b745963e0c5250ad"}'></script></div>
+</body>
+
+</html>

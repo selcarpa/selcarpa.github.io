@@ -1,0 +1,182 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noodp" />
+    <title>用Netty实现Trojan（一） - 今日无新鲜事</title><meta name="Description" content="今日无新鲜事"><meta property="og:title" content="用Netty实现Trojan（一）" />
+<meta property="og:description" content="用Netty实现Trojan（一） 完整代码selcarpa/surfer tag(1.13-SHAPSHOT) 选用技术栈 kotlin Netty Trojan 介绍 Kotlin项目采用kotlin语言，它是一种" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://finite.tain.one/docs/surfer1/" /><meta property="og:image" content="https://finite.tain.one/logo.png" /><meta property="article:section" content="docs" />
+<meta property="article:published_time" content="2023-08-25T09:48:31+08:00" />
+<meta property="article:modified_time" content="2023-12-27T14:15:58+08:00" /><meta property="og:site_name" content="今日无新鲜事" />
+
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:image" content="https://finite.tain.one/logo.png" /><meta name="twitter:title" content="用Netty实现Trojan（一）"/>
+<meta name="twitter:description" content="用Netty实现Trojan（一） 完整代码selcarpa/surfer tag(1.13-SHAPSHOT) 选用技术栈 kotlin Netty Trojan 介绍 Kotlin项目采用kotlin语言，它是一种"/>
+<meta name="application-name" content="今日无新鲜事">
+<meta name="apple-mobile-web-app-title" content="今日无新鲜事">
+
+<meta name="theme-color" content="#f8f8f8"><meta name="msapplication-TileColor" content="#da532c"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5"><link rel="canonical" href="https://finite.tain.one/docs/surfer1/" /><link rel="next" href="https://finite.tain.one/docs/surfer2/" />
+<link rel="stylesheet" href="/css/main.css"><link rel="stylesheet" href="/lib/normalize/normalize.min.css"><link rel="stylesheet" href="/css/color.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'" href="/lib/fontawesome-free/all.min.css">
+        <noscript><link rel="stylesheet" href="/lib/fontawesome-free/all.min.css"></noscript><link rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'" href="/lib/animate/animate.min.css">
+        <noscript><link rel="stylesheet" href="/lib/animate/animate.min.css"></noscript><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "用Netty实现Trojan（一）",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/finite.tain.one\/docs\/surfer1\/"
+        },"genre": "docs","keywords": "Netty, java, kotlin, surfer, trojan","wordcount":  1217 ,
+        "url": "https:\/\/finite.tain.one\/docs\/surfer1\/","datePublished": "2023-08-25T09:48:31+08:00","dateModified": "2023-12-27T14:15:58+08:00","publisher": {
+            "@type": "Organization",
+            "name": ""},"author": {
+                "@type": "Person",
+                "name": "selcarpa"
+            },"description": ""
+    }
+    </script></head>
+
+<body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">
+        function setTheme(theme) {document.body.setAttribute('theme', theme); document.documentElement.style.setProperty('color-scheme', theme === 'light' ? 'light' : 'dark'); window.theme = theme;   window.isDark = window.theme !== 'light' }
+        function saveTheme(theme) {window.localStorage && localStorage.setItem('theme', theme);}
+        function getMeta(metaName) {const metas = document.getElementsByTagName('meta'); for (let i = 0; i < metas.length; i++) if (metas[i].getAttribute('name') === metaName) return metas[i]; return '';}
+        if (window.localStorage && localStorage.getItem('theme')) {let theme = localStorage.getItem('theme');theme === 'light' || theme === 'dark' || theme === 'black' ? setTheme(theme) : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? setTheme('dark') : setTheme('light')); } else { if ('auto' === 'light' || 'auto' === 'dark' || 'auto' === 'black') setTheme('auto'), saveTheme('auto'); else saveTheme('auto'), window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? setTheme('dark') : setTheme('light');}
+        let metaColors = {'light': '#f8f8f8','dark': '#252627','black': '#000000'}
+        getMeta('theme-color').content = metaColors[document.body.getAttribute('theme')];
+        window.switchThemeEventSet = new Set()
+    </script>
+    
+    <div id="back-to-top"></div>
+    <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="今日无新鲜事">今日无新鲜事</a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/docs/"> 文档 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="https://anapla.beyond.tain.one/finite.tain.one" title="访问统计" rel="noopener noreferrer" target="_blank"> 访问统计 </a><a class="menu-item" href="https://github.com/selcarpa/nnt" title="GitHub" rel="noopener noreferrer" target="_blank"><i class='fab fa-github fa-fw'></i>  </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="Search titles or contents..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="Search">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="Clear">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="Switch Theme">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a></div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="今日无新鲜事">今日无新鲜事</a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="Search titles or contents..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="Search">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="Clear">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        Cancel
+                    </a>
+                </div><a class="menu-item" href="/docs/" title="">文档</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="https://anapla.beyond.tain.one/finite.tain.one" title="访问统计" rel="noopener noreferrer" target="_blank">访问统计</a><a class="menu-item" href="https://github.com/selcarpa/nnt" title="GitHub" rel="noopener noreferrer" target="_blank"><i class='fab fa-github fa-fw'></i></a><a href="javascript:void(0);" class="menu-item theme-switch" title="Switch Theme">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+            <div class="container"><div class="page single special"><h1 class="single-title animate__animated animate__pulse animate__faster">用Netty实现Trojan（一）</h1><div class="content" id="content"><h1 id="用netty实现trojan一" class="headerLink">
+    <a href="#%e7%94%a8netty%e5%ae%9e%e7%8e%b0trojan%e4%b8%80" class="header-mark"></a>用Netty实现Trojan（一）</h1><h2 id="完整代码" class="headerLink">
+    <a href="#%e5%ae%8c%e6%95%b4%e4%bb%a3%e7%a0%81" class="header-mark"></a>完整代码</h2><p><a href="https://github.com/selcarpa/surfer/releases/tag/1.13-SNAPSHOT" target="_blank" rel="noopener noreferrer">selcarpa/surfer tag(1.13-SHAPSHOT)</a></p>
+<h2 id="选用技术栈" class="headerLink">
+    <a href="#%e9%80%89%e7%94%a8%e6%8a%80%e6%9c%af%e6%a0%88" class="header-mark"></a>选用技术栈</h2><ul>
+<li>kotlin</li>
+<li>Netty</li>
+<li>Trojan</li>
+</ul>
+<h2 id="介绍" class="headerLink">
+    <a href="#%e4%bb%8b%e7%bb%8d" class="header-mark"></a>介绍</h2><h3 id="kotlin" class="headerLink">
+    <a href="#kotlin" class="header-mark"></a>Kotlin</h3><p>项目采用kotlin语言，它是一种基于JVM的静态类型编程语言，它可以编译成Java字节码，完全兼容Java的生态系统，可以与Java代码无缝互操作。它的语法与Java非常相似，但是它有更多的特性，比如：null安全、扩展函数、运算符重载、lambda表达式、属性代理等等。</p>
+<h3 id="netty" class="headerLink">
+    <a href="#netty" class="header-mark"></a>Netty</h3><p>Netty是一个异步事件驱动的网络应用程序框架，用于快速开发可维护的高性能协议服务器和客户端。Netty是一个NIO客户端-服务器框架，使用Netty可以快速开发网络应用，例如服务器和客户端协议。Netty提供了一种新的方式来使开发网络应用程序，这种新的方式使得它很容易使用和有很强的扩展性。</p>
+<h3 id="什么是trojan" class="headerLink">
+    <a href="#%e4%bb%80%e4%b9%88%e6%98%aftrojan" class="header-mark"></a>什么是Trojan</h3><p><a href="https://trojan-gfw.github.io/trojan/protocol.html" target="_blank" rel="noopener noreferrer">Trojan</a>协议是一个类似于socks的代理协议，它的特点是可以在tls的连接中传输，这样就可以在网络中隐藏自己的流量，使得流量看起来像是一个正常的https连接，从而规避流量审查，在认证方式上，trojan采用56字节作为认证字段，用以验证客户端和服务端的身份。在交互报文中，Trojan协议的<code>Trojan request</code>结构与socks5的<code>socks5 CMD</code>几乎一样。</p>
+<p>早期，Trojan协议被设计为监听443端口，在进行ssl认证之后，进行tcp的协议交互。从Trojan on v2ray开始，Trojan协议可以用于在任何流上进行传输，在我的一些代理的配置中，多使用tls+ws+trojan的方式进行传输，在这种方式下，Trojan协议的内容依照原本的http协议流量进行发送，既能有效隐藏流量特征，又能借助一些cdn服务，使用更优质的线路。</p>
+<h2 id="思路" class="headerLink">
+    <a href="#%e6%80%9d%e8%b7%af" class="header-mark"></a>思路</h2><p>Netty作为Java网络编程的重要框架，可以很好的实现tcp/udp等协议的接收与发送，在本文中，将介绍如何使用Netty去实现trojan协议，兼容v2fly中的tls+ws+trojan的配置方式。那么如何实现这一形式的协议的收发。</p>
+<p>在此配置中trojan协议的数据包会作为二进制数据，在websocket的二进制数据帧中进行传输，而websocket的内容会以tcp形式的包，传输在tls的连接之中，对应这部分的传输内容，我们需要实现将trojan协议的包封装为websocket的二进制数据帧，以及将websocket的二进制数据帧解析为trojan协议的包。</p>
+<h2 id="目标" class="headerLink">
+    <a href="#%e7%9b%ae%e6%a0%87" class="header-mark"></a>目标</h2><ul>
+<li>兼容实现<a href="https://github.com/v2fly/v2ray-core" target="_blank" rel="noopener noreferrer">v2fly/v2fly-core</a>的ws+tls+trojan配置方式的客户端及服务端</li>
+<li>实现http和socks5入口代理，用以在http或者其他客户端中使用此代理</li>
+</ul>
+<h2 id="探讨" class="headerLink">
+    <a href="#%e6%8e%a2%e8%ae%a8" class="header-mark"></a>探讨</h2><ul>
+<li>探讨socks5的udp associate的实现方式</li>
+</ul>
+<h2 id="全文说明" class="headerLink">
+    <a href="#%e5%85%a8%e6%96%87%e8%af%b4%e6%98%8e" class="header-mark"></a>全文说明</h2><p>本文基于curl作为访问客户端进行测试，使用方式如下</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-shell" data-lang="shell"><span class="line"><span class="cl"><span class="nb">export</span> <span class="nv">http_proxy</span><span class="o">=</span>http://127.0.0.1:14271 <span class="c1"># 设置http的环境变量</span>
+</span></span><span class="line"><span class="cl"><span class="nb">export</span> <span class="nv">https_proxy</span><span class="o">=</span>http://127.0.0.1:14271 <span class="c1"># 设置https的环境变量</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">curl -v http://www.google.com <span class="c1"># 进行一次http的请求</span>
+</span></span><span class="line"><span class="cl">curl -v https://www.google.com <span class="c1"># 进行一次https的请求</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div></div></div></div>
+        </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line"><span class="author" itemprop="copyrightHolder">&nbsp;<a href="https://finite.tain.one/" target="_blank" rel="noopener noreferrer">selcarpa</a></span></div>
+            <div class="footer-line"></div>
+            <div class="footer-line">
+            </div>
+        </div></footer></div>
+
+    <div id="fixed-buttons"><a href="#back-to-top" id="back-to-top-button" class="fixed-button" title="Back to Top">
+            <i class="fas fa-arrow-up fa-fw"></i>
+        </a><a href="#" id="view-comments" class="fixed-button" title="View Comments">
+            <i class="fas fa-comment fa-fw"></i>
+        </a>
+    </div><div id="cookieconsent-container"></div><div class="assets"><link rel="stylesheet" href="/lib/katex/katex.min.css"><link rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'" href="/lib/katex/copy-tex.min.css">
+        <noscript><link rel="stylesheet" href="/lib/katex/copy-tex.min.css"></noscript><link rel="stylesheet" href="/lib/cookieconsent/cookieconsent.min.css"><script type="text/javascript">window.config={"code":{"copyTitle":"Copy to clipboard","maxShownLines":50},"comment":{},"cookieconsent":{"content":{"dismiss":"Got it!","link":"Learn more","message":"This website uses Cookies to improve your experience."},"enable":true,"palette":{"button":{"background":"#f0f0f0"},"popup":{"background":"#1aa3ff"}},"theme":"edgeless"},"math":{"delimiters":[{"display":true,"left":"$$","right":"$$"},{"display":true,"left":"\\[","right":"\\]"},{"display":false,"left":"$","right":"$"},{"display":false,"left":"\\(","right":"\\)"}],"strict":false},"search":{"distance":null,"findAllMatches":null,"fuseIndexURL":"/index.json","highlightTag":"em","ignoreFieldNorm":null,"ignoreLocation":null,"isCaseSensitive":null,"location":null,"maxResultLength":10,"minMatchCharLength":null,"noResultsFound":"No results found","snippetLength":50,"threshold":null,"type":"fuse","useExtendedSearch":null}};</script><script type="text/javascript" src="/lib/clipboard/clipboard.min.js"></script><script type="text/javascript" src="/lib/katex/katex.min.js" defer></script><script type="text/javascript" src="/lib/katex/auto-render.min.js" defer></script><script type="text/javascript" src="/lib/katex/copy-tex.min.js" defer></script><script type="text/javascript" src="/lib/katex/mhchem.min.js" defer></script><script type="text/javascript" src="/js/katex.min.js" defer></script><script type="text/javascript" src="/lib/cookieconsent/cookieconsent.min.js" defer></script><script type="text/javascript" src="/js/cookieconsent.min.js" defer></script><script type="text/javascript" src="/js/theme.min.js" defer></script><script async defer data-domain="finite.tain.one" src="https://anapla.beyond.tain.one/js/script.js"></script><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "27987b0a6e2c4a19b745963e0c5250ad"}'></script></div>
+</body>
+
+</html>

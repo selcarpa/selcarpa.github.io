@@ -1,0 +1,440 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noodp" />
+    <title>kotlin-native与C/C&#43;&#43;交互 - 今日无新鲜事</title><meta name="Description" content="今日无新鲜事"><meta property="og:title" content="kotlin-native与C/C&#43;&#43;交互" />
+<meta property="og:description" content="介绍在进行kotlin-native开发时，由于当前版本缺少很多库，所以我们需要使用C/C&#43;&#43;进行补充。本文将以linux平台为例，介绍如何" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://finite.tain.one/docs/kt/kt-c/" /><meta property="og:image" content="https://finite.tain.one/logo.png" /><meta property="article:section" content="docs" />
+<meta property="article:published_time" content="2023-12-06T17:38:08+08:00" />
+<meta property="article:modified_time" content="2023-12-27T14:15:58+08:00" /><meta property="og:site_name" content="今日无新鲜事" />
+
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:image" content="https://finite.tain.one/logo.png" /><meta name="twitter:title" content="kotlin-native与C/C&#43;&#43;交互"/>
+<meta name="twitter:description" content="介绍在进行kotlin-native开发时，由于当前版本缺少很多库，所以我们需要使用C/C&#43;&#43;进行补充。本文将以linux平台为例，介绍如何"/>
+<meta name="application-name" content="今日无新鲜事">
+<meta name="apple-mobile-web-app-title" content="今日无新鲜事">
+
+<meta name="theme-color" content="#f8f8f8"><meta name="msapplication-TileColor" content="#da532c"><link rel="shortcut icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png"><link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"><link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5"><link rel="canonical" href="https://finite.tain.one/docs/kt/kt-c/" /><link rel="prev" href="https://finite.tain.one/docs/tools/cf-ddns/" /><link rel="next" href="https://finite.tain.one/docs/tools/plausible/" />
+<link rel="stylesheet" href="/css/main.css"><link rel="stylesheet" href="/lib/normalize/normalize.min.css"><link rel="stylesheet" href="/css/color.css"><link rel="stylesheet" href="/css/style.min.css"><link rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'" href="/lib/fontawesome-free/all.min.css">
+        <noscript><link rel="stylesheet" href="/lib/fontawesome-free/all.min.css"></noscript><link rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'" href="/lib/animate/animate.min.css">
+        <noscript><link rel="stylesheet" href="/lib/animate/animate.min.css"></noscript><script type="application/ld+json">
+    {
+        "@context": "http://schema.org",
+        "@type": "BlogPosting",
+        "headline": "kotlin-native与C/C++交互",
+        "inLanguage": "zh-CN",
+        "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/finite.tain.one\/docs\/kt\/kt-c\/"
+        },"genre": "docs","keywords": "kotlin, kotlin-native","wordcount":  1406 ,
+        "url": "https:\/\/finite.tain.one\/docs\/kt\/kt-c\/","datePublished": "2023-12-06T17:38:08+08:00","dateModified": "2023-12-27T14:15:58+08:00","publisher": {
+            "@type": "Organization",
+            "name": ""},"authors": [{
+                        "@type": "Person",
+                        "name": "selcarpa"                    
+                    }],"description": ""
+    }
+    </script></head>
+
+<body header-desktop="fixed" header-mobile="auto"><script type="text/javascript">
+        function setTheme(theme) {document.body.setAttribute('theme', theme); document.documentElement.style.setProperty('color-scheme', theme === 'light' ? 'light' : 'dark'); window.theme = theme;   window.isDark = window.theme !== 'light' }
+        function saveTheme(theme) {window.localStorage && localStorage.setItem('theme', theme);}
+        function getMeta(metaName) {const metas = document.getElementsByTagName('meta'); for (let i = 0; i < metas.length; i++) if (metas[i].getAttribute('name') === metaName) return metas[i]; return '';}
+        if (window.localStorage && localStorage.getItem('theme')) {let theme = localStorage.getItem('theme');theme === 'light' || theme === 'dark' || theme === 'black' ? setTheme(theme) : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? setTheme('dark') : setTheme('light')); } else { if ('auto' === 'light' || 'auto' === 'dark' || 'auto' === 'black') setTheme('auto'), saveTheme('auto'); else saveTheme('auto'), window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? setTheme('dark') : setTheme('light');}
+        let metaColors = {'light': '#f8f8f8','dark': '#252627','black': '#000000'}
+        getMeta('theme-color').content = metaColors[document.body.getAttribute('theme')];
+        window.switchThemeEventSet = new Set()
+    </script>
+    
+    <div id="back-to-top"></div>
+    <div id="mask"></div><div class="wrapper"><header class="desktop" id="header-desktop">
+    <div class="header-wrapper">
+        <div class="header-title">
+            <a href="/" title="今日无新鲜事">今日无新鲜事</a>
+        </div>
+        <div class="menu">
+            <div class="menu-inner"><a class="menu-item" href="/docs/"> 文档 </a><a class="menu-item" href="/tags/"> 标签 </a><a class="menu-item" href="/categories/"> 分类 </a><a class="menu-item" href="https://anapla.beyond.tain.one/finite.tain.one" title="访问统计" rel="noopener noreferrer" target="_blank"> 访问统计 </a><a class="menu-item" href="https://github.com/selcarpa/nnt" title="GitHub" rel="noopener noreferrer" target="_blank"><i class='fab fa-github fa-fw'></i>  </a><span class="menu-item delimiter"></span><span class="menu-item search" id="search-desktop">
+                        <input type="text" placeholder="Search titles or contents..." id="search-input-desktop">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-desktop" title="Search">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-desktop" title="Clear">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-desktop">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </span><a href="javascript:void(0);" class="menu-item theme-switch" title="Switch Theme">
+                    <i class="fas fa-adjust fa-fw"></i>
+                </a></div>
+        </div>
+    </div>
+</header><header class="mobile" id="header-mobile">
+    <div class="header-container">
+        <div class="header-wrapper">
+            <div class="header-title">
+                <a href="/" title="今日无新鲜事">今日无新鲜事</a>
+            </div>
+            <div class="menu-toggle" id="menu-toggle-mobile">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+        <div class="menu" id="menu-mobile"><div class="search-wrapper">
+                    <div class="search mobile" id="search-mobile">
+                        <input type="text" placeholder="Search titles or contents..." id="search-input-mobile">
+                        <a href="javascript:void(0);" class="search-button search-toggle" id="search-toggle-mobile" title="Search">
+                            <i class="fas fa-search fa-fw"></i>
+                        </a>
+                        <a href="javascript:void(0);" class="search-button search-clear" id="search-clear-mobile" title="Clear">
+                            <i class="fas fa-times-circle fa-fw"></i>
+                        </a>
+                        <span class="search-button search-loading" id="search-loading-mobile">
+                            <i class="fas fa-spinner fa-fw fa-spin"></i>
+                        </span>
+                    </div>
+                    <a href="javascript:void(0);" class="search-cancel" id="search-cancel-mobile">
+                        Cancel
+                    </a>
+                </div><a class="menu-item" href="/docs/" title="">文档</a><a class="menu-item" href="/tags/" title="">标签</a><a class="menu-item" href="/categories/" title="">分类</a><a class="menu-item" href="https://anapla.beyond.tain.one/finite.tain.one" title="访问统计" rel="noopener noreferrer" target="_blank">访问统计</a><a class="menu-item" href="https://github.com/selcarpa/nnt" title="GitHub" rel="noopener noreferrer" target="_blank"><i class='fab fa-github fa-fw'></i></a><a href="javascript:void(0);" class="menu-item theme-switch" title="Switch Theme">
+                <i class="fas fa-adjust fa-fw"></i>
+            </a></div>
+    </div>
+</header>
+<div class="search-dropdown desktop">
+    <div id="search-dropdown-desktop"></div>
+</div>
+<div class="search-dropdown mobile">
+    <div id="search-dropdown-mobile"></div>
+</div>
+<main class="main">
+            <div class="container"><div class="page single special"><h1 class="single-title animate__animated animate__pulse animate__faster">kotlin-native与C/C&#43;&#43;交互</h1><div class="content" id="content"><h1 id="介绍" class="headerLink">
+    <a href="#%e4%bb%8b%e7%bb%8d" class="header-mark"></a>介绍</h1><p>在进行kotlin-native开发时，由于当前版本缺少很多库，所以我们需要使用C/C++进行补充。本文将以linux平台为例，介绍如何在kotlin-native中使用C/C++。</p>
+<h1 id="准备工作" class="headerLink">
+    <a href="#%e5%87%86%e5%a4%87%e5%b7%a5%e4%bd%9c" class="header-mark"></a>准备工作</h1><ul>
+<li>idea-community</li>
+<li>jdk17</li>
+<li>cmake</li>
+<li>linux</li>
+</ul>
+<h1 id="参考" class="headerLink">
+    <a href="#%e5%8f%82%e8%80%83" class="header-mark"></a>参考</h1><p><a href="https://kotlinlang.org/docs/native-c-interop.html" target="_blank" rel="noopener noreferrer">Interoperability with C</a></p>
+<p><a href="https://kotlinlang.org/docs/native-app-with-c-and-libcurl.html" target="_blank" rel="noopener noreferrer">Create an app using C Interop and libcurl – tutorial</a></p>
+<h1 id="项目地址" class="headerLink">
+    <a href="#%e9%a1%b9%e7%9b%ae%e5%9c%b0%e5%9d%80" class="header-mark"></a>项目地址</h1><p><a href="https://github.com/selcarpa/c_link_demo" target="_blank" rel="noopener noreferrer">selcarpa/c_link_demo</a></p>
+<h1 id="项目结构" class="headerLink">
+    <a href="#%e9%a1%b9%e7%9b%ae%e7%bb%93%e6%9e%84" class="header-mark"></a>项目结构</h1><div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-fallback" data-lang="fallback"><span class="line"><span class="cl">└── c_link_demo
+</span></span><span class="line"><span class="cl">    ├── c_link_demo_c
+</span></span><span class="line"><span class="cl">    │   ├── CMakeLists.txt
+</span></span><span class="line"><span class="cl">    │   ├── library.c
+</span></span><span class="line"><span class="cl">    │   └── library.h
+</span></span><span class="line"><span class="cl">    └── c_link_demo_kt
+</span></span><span class="line"><span class="cl">        ├── build.gradle.kts
+</span></span><span class="line"><span class="cl">        ├── gradle
+</span></span><span class="line"><span class="cl">        │   └── wrapper
+</span></span><span class="line"><span class="cl">        │       ├── gradle-wrapper.jar
+</span></span><span class="line"><span class="cl">        │       └── gradle-wrapper.properties
+</span></span><span class="line"><span class="cl">        ├── gradle.properties
+</span></span><span class="line"><span class="cl">        ├── gradlew
+</span></span><span class="line"><span class="cl">        ├── gradlew.bat
+</span></span><span class="line"><span class="cl">        ├── settings.gradle.kts
+</span></span><span class="line"><span class="cl">        └── src
+</span></span><span class="line"><span class="cl">            ├── commonMain
+</span></span><span class="line"><span class="cl">            │   ├── kotlin
+</span></span><span class="line"><span class="cl">            │   │   └── Main.kt
+</span></span><span class="line"><span class="cl">            │   └── resources
+</span></span><span class="line"><span class="cl">            └── nativeInterop
+</span></span><span class="line"><span class="cl">                └── cinterop
+</span></span><span class="line"><span class="cl">                    └── c_lib_demo.def
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h1 id="步骤" class="headerLink">
+    <a href="#%e6%ad%a5%e9%aa%a4" class="header-mark"></a>步骤</h1><h2 id="创建cc库" class="headerLink">
+    <a href="#%e5%88%9b%e5%bb%bacc%e5%ba%93" class="header-mark"></a>创建C/C++库</h2><p>此处以C库为例</p>
+<h3 id="创建c库" class="headerLink">
+    <a href="#%e5%88%9b%e5%bb%bac%e5%ba%93" class="header-mark"></a>创建C库</h3><p>在c_link_demo_c目录下创建library.c和library.h文件，文件分别声明和实现一个hello函数。</p>
+<p>library.h</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="cp">#ifndef C_LIB_DEMO_LIBRARY_H
+</span></span></span><span class="line"><span class="cl"><span class="cp">#define C_LIB_DEMO_LIBRARY_H
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">hello</span><span class="p">(</span><span class="kt">void</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="cp">#endif </span><span class="c1">//C_LIB_DEMO_LIBRARY_H
+</span></span></span></code></pre></td></tr></table>
+</div>
+</div><p>library.c</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&#34;library.h&#34;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;stdio.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">hello</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">printf</span><span class="p">(</span><span class="s">&#34;Hello, World!</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>创建CMakeLists.txt文件，作用是将C库编译成静态库，内容如下：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-cmake" data-lang="cmake"><span class="line"><span class="cl"><span class="nb">cmake_minimum_required</span><span class="p">(</span><span class="s">VERSION</span> <span class="s">3.27</span><span class="p">)</span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err"></span><span class="nb">project</span><span class="p">(</span><span class="s">c_link_demo_c</span> <span class="s">C</span><span class="p">)</span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err"></span><span class="nb">set</span><span class="p">(</span><span class="s">CMAKE_C_STANDARD</span> <span class="s">11</span><span class="p">)</span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err"></span><span class="nb">add_library</span><span class="p">(</span><span class="s">c_link_demo_c</span> <span class="s">STATIC</span> <span class="s">library.c</span><span class="p">)</span><span class="err">
+</span></span></span></code></pre></td></tr></table>
+</div>
+</div><h2 id="创建kotlin-native项目" class="headerLink">
+    <a href="#%e5%88%9b%e5%bb%bakotlin-native%e9%a1%b9%e7%9b%ae" class="header-mark"></a>创建kotlin-native项目</h2><p>使用idea创建普通的kotlin(gradle)项目，然后打开项目根目录下的build.gradle.kts文件，更改为以下内容：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="line"><span class="cl"><span class="k">import</span> <span class="nn">org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">//使用kotlin-multiplatform插件，用以创建native项目
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="n">plugins</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">kotlin</span><span class="p">(</span><span class="s2">&#34;multiplatform&#34;</span><span class="p">)</span> <span class="n">version</span> <span class="s2">&#34;1.9.21&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">//包名版本号
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="n">group</span> <span class="p">=</span> <span class="s2">&#34;one.tain&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="n">version</span> <span class="p">=</span> <span class="s2">&#34;1.0-SNAPSHOT&#34;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">repositories</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">mavenCentral</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="n">google</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">//kotlin插件
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="n">kotlin</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">//指定main函数入口
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="k">fun</span> <span class="nf">KotlinNativeTarget</span><span class="p">.</span><span class="n">config</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">binaries</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="n">executable</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                <span class="n">entryPoint</span> <span class="p">=</span> <span class="s2">&#34;main&#34;</span>
+</span></span><span class="line"><span class="cl">            <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1">//指定平台
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="n">linuxX64</span><span class="p">(</span><span class="s2">&#34;linuxX64&#34;</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">config</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>可以关注到当前创建了一个kotlin-native的项目，进行一次构建后，会发现idea不会识别main目录下的kotlin文件，native项目的默认源码和资源目录是src/nativeMain/kotlin和src/nativeMain/resources，所以我们需要更改一下项目结构。</p>
+<p>在项目根目录下创建src/commonMain/kotlin目录，将main目录下的kotlin文件移动到commonMain目录下，在commonMain目录下创建resources目录，删除main目录。</p>
+<p>然后可以调试kotlin原生应用。但是此处并没有进行C的交互链接，后续的步骤会进行C交互的补充。</p>
+<h2 id="创建cc交互配置文件" class="headerLink">
+    <a href="#%e5%88%9b%e5%bb%bacc%e4%ba%a4%e4%ba%92%e9%85%8d%e7%bd%ae%e6%96%87%e4%bb%b6" class="header-mark"></a>创建C/C++交互配置文件</h2><p>在项目根目录下创建nativeInterop/cinterop/c_lib_demo.def文件，内容如下：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-properties" data-lang="properties"><span class="line"><span class="cl"><span class="c1"># 指定头文件的绝对路径</span>
+</span></span><span class="line"><span class="cl"><span class="na">headers</span> <span class="o">=</span> <span class="s">/home/sel/repository/selcarpa/c_link_demo/c_link_demo_c/library.h</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># 指定库文件的名称</span>
+</span></span><span class="line"><span class="cl"><span class="na">staticLibraries</span> <span class="o">=</span> <span class="s">libc_link_demo_c.a</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># 指定库文件的绝对路径</span>
+</span></span><span class="line"><span class="cl"><span class="na">libraryPaths</span> <span class="o">=</span> <span class="s">/home/sel/repository/selcarpa/c_link_demo/c_link_demo_c/cmake-build-debug</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><h2 id="更改构建脚本" class="headerLink">
+    <a href="#%e6%9b%b4%e6%94%b9%e6%9e%84%e5%bb%ba%e8%84%9a%e6%9c%ac" class="header-mark"></a>更改构建脚本</h2><p>在项目根目录下的build.gradle.kts文件中的linuxX64方法下，添加以下内容：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="line"><span class="cl"><span class="n">compilations</span><span class="p">[</span><span class="s2">&#34;main&#34;</span><span class="p">].</span><span class="n">cinterops</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="nd">@Suppress</span><span class="p">(</span><span class="s2">&#34;LocalVariableName&#34;</span><span class="p">)</span> <span class="k">val</span> <span class="py">c</span><span class="n">_lib_demo</span> <span class="k">by</span> <span class="n">creating</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>点击构建按钮，在idea的External Libraries中可以看到c_lib_demo的库文件已经被加载进来了。
+<figure><a class="lightgallery" href="/docs/kt/kt-c/images/128376.png" title="External Libraries" data-thumbnail="/docs/kt/kt-c/images/128376.png">
+        <img
+            
+            loading="lazy"
+            src="/docs/kt/kt-c/images/128376.png"
+            srcset="/docs/kt/kt-c/images/128376.png, /docs/kt/kt-c/images/128376.png 1.5x, /docs/kt/kt-c/images/128376.png 2x"
+            sizes="auto"
+            alt="External Libraries" height="704"  width="646" >
+    </a></figure></p>
+<h2 id="调用c函数" class="headerLink">
+    <a href="#%e8%b0%83%e7%94%a8c%e5%87%bd%e6%95%b0" class="header-mark"></a>调用C函数</h2><p>在commonMain目录下的main.kt文件中调用C函数，内容如下：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-kotlin" data-lang="kotlin"><span class="line"><span class="cl"><span class="k">import</span> <span class="nn">c_lib_demo.hello</span>
+</span></span><span class="line"><span class="cl"><span class="k">import</span> <span class="nn">kotlinx.cinterop.ExperimentalForeignApi</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nd">@OptIn</span><span class="p">(</span><span class="n">ExperimentalForeignApi</span><span class="o">::</span><span class="k">class</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="k">fun</span> <span class="nf">main</span><span class="p">(</span><span class="n">args</span><span class="p">:</span> <span class="n">Array</span><span class="p">&lt;</span><span class="n">String</span><span class="p">&gt;)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">hello</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>输出结果如下：</p>
+<p><figure><a class="lightgallery" href="/docs/kt/kt-c/images/1233245.png" title="输出结果" data-thumbnail="/docs/kt/kt-c/images/1233245.png">
+        <img
+            
+            loading="lazy"
+            src="/docs/kt/kt-c/images/1233245.png"
+            srcset="/docs/kt/kt-c/images/1233245.png, /docs/kt/kt-c/images/1233245.png 1.5x, /docs/kt/kt-c/images/1233245.png 2x"
+            sizes="auto"
+            alt="输出结果" height="1029"  width="1920" >
+    </a></figure></p>
+<h2 id="补充说明" class="headerLink">
+    <a href="#%e8%a1%a5%e5%85%85%e8%af%b4%e6%98%8e" class="header-mark"></a>补充说明</h2><p>c_lib_demo.def还有其他的配置方法，例：</p>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-properties" data-lang="properties"><span class="line"><span class="cl"><span class="c1"># 指定头文件的名称</span>
+</span></span><span class="line"><span class="cl"><span class="na">headers</span> <span class="o">=</span> <span class="s">library.h</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># 指定编译的include行为，从而指定头文件的搜索路径</span>
+</span></span><span class="line"><span class="cl"><span class="na">compilerOpts.linux</span> <span class="o">=</span> <span class="s">-I/home/sel/repository/selcarpa/c_link_demo/c_link_demo_c</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># 指定链接的行为，从而指定库文件的搜索路径和库文件的名称</span>
+</span></span><span class="line"><span class="cl"><span class="na">linkerOpts.linux</span> <span class="o">=</span> <span class="s">-L/home/sel/repository/selcarpa/c_link_demo/c_link_demo_c/cmake-build-debug -lc_link_demo_c</span>
+</span></span></code></pre></td></tr></table>
+</div>
+</div><p>这种方式更方便地指定不同平台的行为</p>
+</div></div></div>
+        </main><footer class="footer">
+        <div class="footer-container"><div class="footer-line"><span class="author" itemprop="copyrightHolder">&nbsp;<a href="https://finite.tain.one/" target="_blank" rel="noopener noreferrer">selcarpa</a></span></div>
+            <div class="footer-line"></div>
+            <div class="footer-line">
+            </div>
+        </div></footer></div>
+
+    <div id="fixed-buttons"><a href="#back-to-top" id="back-to-top-button" class="fixed-button" title="Back to Top">
+            <i class="fas fa-arrow-up fa-fw"></i>
+        </a><a href="#" id="view-comments" class="fixed-button" title="View Comments">
+            <i class="fas fa-comment fa-fw"></i>
+        </a>
+    </div><div id="cookieconsent-container"></div><div class="assets"><link rel="stylesheet" href="/lib/katex/katex.min.css"><link rel="preload" as="style" onload="this.onload=null;this.rel='stylesheet'" href="/lib/katex/copy-tex.min.css">
+        <noscript><link rel="stylesheet" href="/lib/katex/copy-tex.min.css"></noscript><link rel="stylesheet" href="/lib/cookieconsent/cookieconsent.min.css"><script type="text/javascript">window.config={"code":{"copyTitle":"Copy to clipboard","maxShownLines":50},"comment":{},"cookieconsent":{"content":{"dismiss":"Got it!","link":"Learn more","message":"This website uses Cookies to improve your experience."},"enable":true,"palette":{"button":{"background":"#f0f0f0"},"popup":{"background":"#1aa3ff"}},"theme":"edgeless"},"math":{"delimiters":[{"display":true,"left":"$$","right":"$$"},{"display":true,"left":"\\[","right":"\\]"},{"display":false,"left":"$","right":"$"},{"display":false,"left":"\\(","right":"\\)"}],"strict":false},"search":{"distance":null,"findAllMatches":null,"fuseIndexURL":"/index.json","highlightTag":"em","ignoreFieldNorm":null,"ignoreLocation":null,"isCaseSensitive":null,"location":null,"maxResultLength":10,"minMatchCharLength":null,"noResultsFound":"No results found","snippetLength":50,"threshold":null,"type":"fuse","useExtendedSearch":null}};</script><script type="text/javascript" src="/lib/clipboard/clipboard.min.js"></script><script type="text/javascript" src="/lib/katex/katex.min.js" defer></script><script type="text/javascript" src="/lib/katex/auto-render.min.js" defer></script><script type="text/javascript" src="/lib/katex/copy-tex.min.js" defer></script><script type="text/javascript" src="/lib/katex/mhchem.min.js" defer></script><script type="text/javascript" src="/js/katex.min.js" defer></script><script type="text/javascript" src="/lib/cookieconsent/cookieconsent.min.js" defer></script><script type="text/javascript" src="/js/cookieconsent.min.js" defer></script><script type="text/javascript" src="/js/theme.min.js" defer></script><script async defer data-domain="finite.tain.one" src="https://anapla.beyond.tain.one/js/script.js"></script><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "27987b0a6e2c4a19b745963e0c5250ad"}'></script></div>
+</body>
+
+</html>

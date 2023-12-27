@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Docs on 今日无新鲜事</title>
+    <link>https://finite.tain.one/docs/</link>
+    <description>Recent content in Docs on 今日无新鲜事</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>zh-CN</language>
+    <managingEditor>selcarpa@gmail.com (selcarpa)</managingEditor>
+    <webMaster>selcarpa@gmail.com (selcarpa)</webMaster>
+    <lastBuildDate>Mon, 25 Dec 2023 10:34:27 +0800</lastBuildDate>
+    <atom:link href="https://finite.tain.one/docs/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>自托管Plausible统计静态网页访问</title>
+      <link>https://finite.tain.one/docs/tools/plausible/</link>
+      <pubDate>Mon, 25 Dec 2023 10:34:27 +0800</pubDate><author>selcarpa@gmail.com (selcarpa)</author>
+      <guid>https://finite.tain.one/docs/tools/plausible/</guid>
+      <description>背景 我们需要一个统计工具，用于统计静态网页的访问量 不少人的浏览器会安装ublock、adblock等插件，导致一众统计服务无法统计到访问量 P</description>
+    </item>
+    <item>
+      <title>kotlin-native与C/C&#43;&#43;交互</title>
+      <link>https://finite.tain.one/docs/kt/kt-c/</link>
+      <pubDate>Wed, 06 Dec 2023 17:38:08 +0800</pubDate><author>selcarpa@gmail.com (selcarpa)</author>
+      <guid>https://finite.tain.one/docs/kt/kt-c/</guid>
+      <description>介绍在进行kotlin-native开发时，由于当前版本缺少很多库，所以我们需要使用C/C++进行补充。本文将以linux平台为例，介绍如何</description>
+    </item>
+    <item>
+      <title>使用cloudflare的api实现ddns</title>
+      <link>https://finite.tain.one/docs/tools/cf-ddns/</link>
+      <pubDate>Mon, 11 Sep 2023 17:18:08 +0800</pubDate><author>selcarpa@gmail.com (selcarpa)</author>
+      <guid>https://finite.tain.one/docs/tools/cf-ddns/</guid>
+      <description>介绍在家里搭建一些私有服务时，如果没有公网ip，就无法通过外网访问。这个时候我们一般有三个方案： 方案一，打电话让运营商分配一个公网ip 方案二</description>
+    </item>
+    <item>
+      <title>借助wslg使用Linux版本的idea</title>
+      <link>https://finite.tain.one/docs/tools/wslg/</link>
+      <pubDate>Tue, 29 Aug 2023 23:56:17 +0800</pubDate><author>selcarpa@gmail.com (selcarpa)</author>
+      <guid>https://finite.tain.one/docs/tools/wslg/</guid>
+      <description>缘由大部分Java程序员都会使用idea在Windows下进行开发，然后部署到Linux服务器上，大部分情况下，Java强大的跨平台性使得这</description>
+    </item>
+    <item>
+      <title>用Netty实现Trojan（二）&#34;</title>
+      <link>https://finite.tain.one/docs/surfer2/</link>
+      <pubDate>Fri, 25 Aug 2023 09:49:07 +0800</pubDate><author>selcarpa@gmail.com (selcarpa)</author>
+      <guid>https://finite.tain.one/docs/surfer2/</guid>
+      <description>用Netty实现Trojan（二）本节主要是介绍如何实现一个允许tcp通过的socks代理服务器，大部分携带网络功能的客户端，如curl、w</description>
+    </item>
+    <item>
+      <title>用Netty实现Trojan（一）</title>
+      <link>https://finite.tain.one/docs/surfer1/</link>
+      <pubDate>Fri, 25 Aug 2023 09:48:31 +0800</pubDate><author>selcarpa@gmail.com (selcarpa)</author>
+      <guid>https://finite.tain.one/docs/surfer1/</guid>
+      <description>用Netty实现Trojan（一） 完整代码selcarpa/surfer tag(1.13-SHAPSHOT) 选用技术栈 kotlin Netty Trojan 介绍 Kotlin项目采用kotlin语言，它是一种</description>
+    </item>
+  </channel>
+</rss>

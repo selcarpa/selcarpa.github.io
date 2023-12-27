@@ -1,0 +1,78 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+    <channel>
+        <title>Tags - Tag - 今日无新鲜事</title>
+        <link>https://finite.tain.one/tags/</link>
+        <description>Tags - Tag - 今日无新鲜事</description>
+        <generator>Hugo -- gohugo.io</generator><language>zh-CN</language><managingEditor>selcarpa@gmail.com (selcarpa)</managingEditor>
+            <webMaster>selcarpa@gmail.com (selcarpa)</webMaster><lastBuildDate>Mon, 25 Dec 2023 10:34:27 &#43;0800</lastBuildDate><atom:link href="https://finite.tain.one/tags/" rel="self" type="application/rss+xml" /><item>
+    <title>tools</title>
+    <link>https://finite.tain.one/tags/tools/</link>
+    <pubDate>Mon, 25 Dec 2023 10:34:27 &#43;0800</pubDate><author>
+        <name>selcarpa</name>
+    </author><guid>https://finite.tain.one/tags/tools/</guid>
+    <description><![CDATA[]]></description>
+</item><item>
+    <title>web analytics</title>
+    <link>https://finite.tain.one/tags/web-analytics/</link>
+    <pubDate>Mon, 25 Dec 2023 10:34:27 &#43;0800</pubDate><author>
+        <name>selcarpa</name>
+    </author><guid>https://finite.tain.one/tags/web-analytics/</guid>
+    <description><![CDATA[]]></description>
+</item><item>
+    <title>kotlin</title>
+    <link>https://finite.tain.one/tags/kotlin/</link>
+    <pubDate>Wed, 06 Dec 2023 17:38:08 &#43;0800</pubDate><author>
+        <name>selcarpa</name>
+    </author><guid>https://finite.tain.one/tags/kotlin/</guid>
+    <description><![CDATA[]]></description>
+</item><item>
+    <title>kotlin-native</title>
+    <link>https://finite.tain.one/tags/kotlin-native/</link>
+    <pubDate>Wed, 06 Dec 2023 17:38:08 &#43;0800</pubDate><author>
+        <name>selcarpa</name>
+    </author><guid>https://finite.tain.one/tags/kotlin-native/</guid>
+    <description><![CDATA[]]></description>
+</item><item>
+    <title>cloudflare</title>
+    <link>https://finite.tain.one/tags/cloudflare/</link>
+    <pubDate>Mon, 11 Sep 2023 17:18:08 &#43;0800</pubDate><author>
+        <name>selcarpa</name>
+    </author><guid>https://finite.tain.one/tags/cloudflare/</guid>
+    <description><![CDATA[]]></description>
+</item><item>
+    <title>cloudflare-ddns</title>
+    <link>https://finite.tain.one/tags/cloudflare-ddns/</link>
+    <pubDate>Mon, 11 Sep 2023 17:18:08 &#43;0800</pubDate><author>
+        <name>selcarpa</name>
+    </author><guid>https://finite.tain.one/tags/cloudflare-ddns/</guid>
+    <description><![CDATA[]]></description>
+</item><item>
+    <title>ddns</title>
+    <link>https://finite.tain.one/tags/ddns/</link>
+    <pubDate>Mon, 11 Sep 2023 17:18:08 &#43;0800</pubDate><author>
+        <name>selcarpa</name>
+    </author><guid>https://finite.tain.one/tags/ddns/</guid>
+    <description><![CDATA[]]></description>
+</item><item>
+    <title>Jetbrains</title>
+    <link>https://finite.tain.one/tags/jetbrains/</link>
+    <pubDate>Tue, 29 Aug 2023 23:56:17 &#43;0800</pubDate><author>
+        <name>selcarpa</name>
+    </author><guid>https://finite.tain.one/tags/jetbrains/</guid>
+    <description><![CDATA[]]></description>
+</item><item>
+    <title>wsl</title>
+    <link>https://finite.tain.one/tags/wsl/</link>
+    <pubDate>Tue, 29 Aug 2023 23:56:17 &#43;0800</pubDate><author>
+        <name>selcarpa</name>
+    </author><guid>https://finite.tain.one/tags/wsl/</guid>
+    <description><![CDATA[]]></description>
+</item><item>
+    <title>wslg</title>
+    <link>https://finite.tain.one/tags/wslg/</link>
+    <pubDate>Tue, 29 Aug 2023 23:56:17 &#43;0800</pubDate><author>
+        <name>selcarpa</name>
+    </author><guid>https://finite.tain.one/tags/wslg/</guid>
+    <description><![CDATA[]]></description>
+</item></channel>
+</rss>
